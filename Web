@@ -1,0 +1,80 @@
+
+import requests
+from bs4 import BeautifulSoup
+import csv
+
+# Website URL designed for web scraping
+url = "https://books.toscrape.com/catalogue/page-1.html"
+
+# Send HTTP request
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
+
+try:
+    response = requests.get(
+        url, headers=headers, timeout=15
+    )
+    response.raise_for_status()
+
+    # Parse HTML content
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Find all books
+    books = soup.find_all("article", class_="product_pod")
+
+    # Store extracted information
+    data = []
+
+    for book in books:
+        title = book.h3.a["title"]
+
+        price = book.find(
+            "p", class_="price_color"
+        ).text.strip()
+
+        availability = book.find(
+            "p", class_="instock availability"
+        ).text.strip()
+
+        rating = book.p["class"][1]
+
+        data.append([
+            title,
+            price,
+            availability,
+            rating
+        ])
+
+    # Save data into CSV file
+    with open(
+        "books_data.csv",
+        "w",
+        newline="",
+        encoding="utf-8-sig"
+    ) as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow([
+            "Book Title",
+            "Price",
+            "Availability",
+            "Rating"
+        ])
+
+        writer.writerows(data)
+
+    print("Web scraping completed successfully!")
+    print("Total books extracted:", len(data))
+    print("CSV file saved as books_data.csv")
+
+    print("\nExtracted Data:")
+    for book in data:
+        print(book)
+
+except requests.exceptions.RequestException as e:
+    print("Website connection error:", e)
+
+except Exception as e:
+    print("Error:", e)
